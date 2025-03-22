@@ -1,0 +1,19 @@
+{
+	"name": "growpath-zoom-integration",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"dev": "NODE_ENV=development bun run src/index.ts",
+		"prod": "NODE_ENV=production bun run src/index.ts"
+	},
+	"dependencies": {
+		"dotenv": "^16.4.7",
+		"elysia": "^1.2.25"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	}
+}
