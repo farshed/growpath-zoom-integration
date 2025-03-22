@@ -96,6 +96,7 @@ async function sendRequest(url: string, method: 'POST' | 'PUT', body: Record<str
 	const response = await fetch(url, {
 		method,
 		headers: {
+			Authorization: `Bearer ${process.env.GROWPATH_AUTH_TOKEN}`,
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify(body)
