@@ -1,15 +1,7 @@
 # growpath-zoom-integration
 
-To install dependencies:
+When a call ends or is missed, create a phone log record
+If it is missed, make the duration 0
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.0. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+When a call is connected, create a telephony event
+When it ends, update it with end time and recording url
