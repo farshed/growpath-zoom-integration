@@ -73,8 +73,8 @@ app.post(
 					}
 				});
 
-				// TODO
-				addToCache(payload?.object?.call_id, { telephonyEventId: '' });
+				const callId = payload?.object?.call_id;
+				if (response?.id) addToCache(callId, { telephonyEventId: response.id });
 			} else if (
 				[...EVENT.CALL_ENDED, EVENT.CALL_MISSED, EVENT.CALL_REJECTED].includes(body.event)
 			) {
@@ -102,7 +102,7 @@ app.post(
 				});
 
 				const callId = payload?.object?.call_id;
-				addToCache(callId, { phoneLogId: phoneLogResponse?.id });
+				if (phoneLogResponse?.id) addToCache(callId, { phoneLogId: phoneLogResponse.id });
 
 				const data = cache[callId];
 				if (!data?.telephonyEventId) return;
@@ -219,7 +219,7 @@ function addToCache(callId: string, value: Record<string, any>) {
 
 function getCallDuration(answerStartTime: string, callEndTime: string) {
 	if (!answerStartTime) return 0;
-	return (+new Date(callEndTime) - +new Date(answerStartTime)) / 1000;
+	return Math.round((+new Date(callEndTime) - +new Date(answerStartTime)) / 1000);
 }
 
 function formatTimestamp(timestamp?: string) {
