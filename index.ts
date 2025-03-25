@@ -148,7 +148,9 @@ app.post(
 			payload: t.Object({}, { additionalProperties: true })
 		})
 	}
-);
+).listen(process.env.PORT || 3000);
+
+console.log(`🦊 Server is running at ${app.server?.hostname}:${app.server?.port}`);
 
 async function sendRequest(
 	url: string,
