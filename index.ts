@@ -37,6 +37,9 @@ app.post(
 			const hashForVerify = hasher.update(message).digest('hex');
 			const signature = `v0=${hashForVerify}`;
 
+			console.log('verified', headers['x-zm-signature'] !== signature);
+			console.log('event', body.event);
+
 			if (headers['x-zm-signature'] !== signature) return;
 
 			const payload = body.payload as any;
@@ -44,6 +47,11 @@ app.post(
 			if (body.event === EVENT.URL_VALIDATION) {
 				const hasher = new Bun.CryptoHasher('sha256', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
 				const hashForValidate = hasher.update(payload?.plainToken).digest('hex');
+
+				console.log({
+					plainToken: payload?.plainToken,
+					encryptedToken: hashForValidate
+				});
 
 				set.status = 200;
 				return {
