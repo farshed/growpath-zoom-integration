@@ -37,6 +37,7 @@ app.post(
 			const hashForVerify = hasher.update(message).digest('hex');
 			const signature = `v0=${hashForVerify}`;
 
+			console.log('token', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
 			console.log('signature', headers['x-zm-signature'], signature);
 			console.log('verified', headers['x-zm-signature'] === signature);
 			console.log('event', body.event);
