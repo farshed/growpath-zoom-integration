@@ -38,6 +38,8 @@ app.post(
 			const hashForVerify = hasher.update(message).digest('hex');
 			const signature = `v0=${hashForVerify}`;
 
+			console.log('Event received:', body.event);
+
 			if (headers['x-zm-signature'] !== signature) {
 				set.status = 401;
 				return 'Unauthorized!';
@@ -45,8 +47,6 @@ app.post(
 
 			const payload = body.payload as any;
 			set.status = 200;
-
-			console.log('Event received:', body.event);
 
 			if (body.event === EVENT.URL_VALIDATION) {
 				const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
