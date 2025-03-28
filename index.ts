@@ -152,7 +152,10 @@ app.post(
 		body: t.Object(
 			{
 				event: t.String(),
-				payload: t.Object({ plainToken: t.String() }, { additionalProperties: true })
+				payload: t.Object(
+					{ plainToken: t.Optional(t.String()) },
+					{ additionalProperties: true }
+				)
 			},
 			{ additionalProperties: true }
 		)
