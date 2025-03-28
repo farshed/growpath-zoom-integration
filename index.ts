@@ -47,10 +47,10 @@ app.post(
 			console.log('event', body.event);
 			console.log('payload', body.payload);
 
-			// if (headers['x-zm-signature'] !== signature) {
-			// 	set.status = 401;
-			// 	return 'Unauthorized!';
-			// }
+			if (headers['x-zm-signature'] !== signature) {
+				set.status = 401;
+				return 'Unauthorized!';
+			}
 
 			const payload = body.payload as any;
 			set.status = 200;
