@@ -148,7 +148,7 @@ app.post(
 				if (callId) delete cache[callId];
 			}
 		} catch (error) {
-			console.error(error);
+			console.log(error);
 		}
 	},
 	{
