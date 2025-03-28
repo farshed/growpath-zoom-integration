@@ -48,16 +48,16 @@ app.post(
 			console.log('event', body.event);
 			console.log('payload', body.payload);
 
-			if (headers['x-zm-signature'] !== signature) {
-				set.status = 401;
-				return 'Unauthorized!';
-			}
+			// if (headers['x-zm-signature'] !== signature) {
+			// 	set.status = 401;
+			// 	return 'Unauthorized!';
+			// }
 
 			const payload = body.payload as any;
 			set.status = 200;
 
 			if (body.event === EVENT.URL_VALIDATION) {
-				const hasher = new Bun.CryptoHasher('sha256', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
+				const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
 				const hashForValidate = hasher.update(payload?.plainToken).digest('hex');
 
 				console.log({
