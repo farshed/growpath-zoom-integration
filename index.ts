@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { Elysia, t } from 'elysia';
 
+const ZOOM_WEBHOOK_SECRET_TOKEN = process.env.ZOOM_WEBHOOK_SECRET_TOKEN as any;
 const isDev = process.env.NODE_ENV === 'development';
 const endpointSuffix = isDev ? '-training' : '';
 const GROWPATH_BASE_URL = `https://nguyen${endpointSuffix}.growpath.com/api/v2`;
@@ -28,8 +29,6 @@ let cache = {} as any;
 
 const app = new Elysia();
 
-const ZOOM_WEBHOOK_SECRET_TOKEN = process.env.ZOOM_WEBHOOK_SECRET_TOKEN as any;
-
 app.post(
 	'/webhook',
 	async ({ body, headers, set }) => {
@@ -38,14 +37,6 @@ app.post(
 			const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
 			const hashForVerify = hasher.update(message).digest('hex');
 			const signature = `v0=${hashForVerify}`;
-
-			// console.log('headers', headers);
-			console.log('body', JSON.stringify(body));
-			console.log('token', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
-			console.log('signature', headers['x-zm-signature'], signature);
-			console.log('verified', headers['x-zm-signature'] === signature);
-			console.log('event', body.event);
-			console.log('payload', body.payload);
 
 			if (headers['x-zm-signature'] !== signature) {
 				set.status = 401;
