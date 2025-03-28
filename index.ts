@@ -46,6 +46,8 @@ app.post(
 			const payload = body.payload as any;
 			set.status = 200;
 
+			console.log('Event received:', body.event);
+
 			if (body.event === EVENT.URL_VALIDATION) {
 				const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
 				const hashForValidate = hasher.update(payload?.plainToken).digest('hex');
@@ -143,7 +145,7 @@ app.post(
 				if (callId) delete cache[callId];
 			}
 		} catch (error) {
-			console.log(error);
+			console.log('Error:', error);
 		}
 	},
 	{
@@ -166,6 +168,7 @@ async function sendRequest(
 	method: 'GET' | 'POST' | 'PUT',
 	body?: Record<string, any>
 ) {
+	console.log(method, url, JSON.stringify(body));
 	const response = await fetch(url, {
 		method,
 		headers: {
