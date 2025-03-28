@@ -17,7 +17,7 @@ const GROWPATH = {
 
 const EVENT = {
 	URL_VALIDATION: 'endpoint.url_validation',
-	CALL_RINGING: 'phone.caller_connected', // when the caller hears the ringing sound
+	CALL_RINGING: 'phone.caller_ringing', // when the caller hears the ringback tone
 	CALL_ANSWERED: 'phone.callee_answered', // when the call is answered
 	CALL_ENDED: ['phone.caller_ended', 'phone.callee_ended'], // call is ended by the caller or callee
 	CALL_MISSED: 'phone.callee_missed', // call is missed
