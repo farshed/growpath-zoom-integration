@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Elysia, t } from 'elysia';
+import crypto from 'node:crypto';
 
 const isDev = process.env.NODE_ENV === 'development';
 const endpointSuffix = isDev ? '-training' : '';
@@ -28,12 +29,14 @@ let cache = {} as any;
 
 const app = new Elysia();
 
+const ZOOM_WEBHOOK_SECRET_TOKEN = process.env.ZOOM_WEBHOOK_SECRET_TOKEN as any;
+
 app.post(
 	'/webhook',
 	async ({ body, headers, set }) => {
 		try {
 			const message = `v0:${headers['x-zm-request-timestamp']}:${JSON.stringify(body)}`;
-			const hasher = new Bun.CryptoHasher('sha256', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
+			const hasher = crypto.createHmac('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
 			const hashForVerify = hasher.update(message).digest('hex');
 			const signature = `v0=${hashForVerify}`;
 
