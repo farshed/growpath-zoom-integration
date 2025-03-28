@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { Elysia, t } from 'elysia';
-import crypto from 'node:crypto';
 
 const isDev = process.env.NODE_ENV === 'development';
 const endpointSuffix = isDev ? '-training' : '';
@@ -36,12 +35,12 @@ app.post(
 	async ({ body, headers, set }) => {
 		try {
 			const message = `v0:${headers['x-zm-request-timestamp']}:${JSON.stringify(body)}`;
-			const hasher = crypto.createHmac('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
+			const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
 			const hashForVerify = hasher.update(message).digest('hex');
 			const signature = `v0=${hashForVerify}`;
 
 			// console.log('headers', headers);
-			// console.log('body', JSON.stringify(body));
+			console.log('body', JSON.stringify(body));
 			console.log('token', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
 			console.log('signature', headers['x-zm-signature'], signature);
 			console.log('verified', headers['x-zm-signature'] === signature);
@@ -59,11 +58,6 @@ app.post(
 			if (body.event === EVENT.URL_VALIDATION) {
 				const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
 				const hashForValidate = hasher.update(payload?.plainToken).digest('hex');
-
-				console.log({
-					plainToken: payload?.plainToken,
-					encryptedToken: hashForValidate
-				});
 
 				return {
 					plainToken: payload?.plainToken,
