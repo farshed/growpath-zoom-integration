@@ -156,10 +156,13 @@ app.post(
 		}
 	},
 	{
-		body: t.Object({
-			event: t.String(),
-			payload: t.Object({ plainToken: t.String() }, { additionalProperties: true })
-		})
+		body: t.Object(
+			{
+				event: t.String(),
+				payload: t.Object({ plainToken: t.String() }, { additionalProperties: true })
+			},
+			{ additionalProperties: true }
+		)
 	}
 )
 	.get('/ping', () => 'API is running')
