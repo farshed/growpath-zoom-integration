@@ -39,6 +39,7 @@ app.post(
 
 			console.log('verified', headers['x-zm-signature'] !== signature);
 			console.log('event', body.event);
+			console.log('payload', body.payload);
 
 			if (headers['x-zm-signature'] !== signature) return;
 
