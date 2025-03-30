@@ -62,7 +62,7 @@ app.post(
 				const from_number = payload?.object?.caller?.phone_number?.slice(-10);
 				const to_number = payload?.object?.callee?.phone_number?.slice(-10);
 
-				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(from_number);
+				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(to_number);
 				const matter_type = await getMatterType(matter_id);
 				const staff_id = await getUserIdByName(paralegal);
 
@@ -183,6 +183,7 @@ async function sendRequest(
 	const data = await response.json();
 	console.log(method, url, body && JSON.stringify(body));
 	console.log('Response', data);
+	console.log('\n');
 	return data;
 }
 
@@ -194,6 +195,14 @@ async function getMatterByPhone(phoneNumber: string) {
 		(a: any, b: any) => +new Date(b.updated_at) - +new Date(a.updated_at)
 	)?.[0];
 
+	console.log(
+		'getMatterByPhone',
+		JSON.stringify({
+			matter_id: matter?.id,
+			involvee_id: matter?.claimant_id,
+			paralegal: matter?.paralegal
+		})
+	);
 	return { matter_id: matter?.id, involvee_id: matter?.claimant_id, paralegal: matter?.paralegal };
 }
 
