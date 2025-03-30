@@ -171,8 +171,7 @@ async function sendRequest(
 	method: 'GET' | 'POST' | 'PUT',
 	body?: Record<string, any>
 ) {
-	console.log(method, url, JSON.stringify(body));
-	const response = await fetch(url, {
+	const response = await fetch(encodeURI(url), {
 		method,
 		headers: {
 			Authorization: `Bearer ${process.env.GROWPATH_AUTH_TOKEN}`,
@@ -182,11 +181,13 @@ async function sendRequest(
 	});
 
 	const data = await response.json();
+	console.log(method, url, body && JSON.stringify(body));
+	console.log('Response', data);
 	return data;
 }
 
 async function getMatterByPhone(phoneNumber: string) {
-	const mattersListUrl = encodeURI(`${GROWPATH.MATTERS}?filters={"q":"${phoneNumber}"}`);
+	const mattersListUrl = `${GROWPATH.MATTERS}?filters={"q":"${phoneNumber}"}`;
 	const mattersResponse = await sendRequest(mattersListUrl, 'GET');
 
 	const matter = (mattersResponse?.matters || []).sort(
@@ -199,14 +200,12 @@ async function getMatterByPhone(phoneNumber: string) {
 async function getMatterType(matterId: number) {
 	if (!matterId) return '';
 
-	const matterGetUrl = encodeURI(`${GROWPATH.MATTERS}/${matterId}`);
+	const matterGetUrl = `${GROWPATH.MATTERS}/${matterId}`;
 	const matterResponse = await sendRequest(matterGetUrl, 'GET');
 	const case_type_id = matterResponse?.matter?.case_type_id;
 
 	if (!case_type_id) return '';
-	const matterTypesListUrl = encodeURI(
-		`${GROWPATH.MATTER_TYPES}?filters={"id":[${case_type_id}]}`
-	);
+	const matterTypesListUrl = `${GROWPATH.MATTER_TYPES}?filters={"id":[${case_type_id}]}`;
 	const matterTypesResponse = await sendRequest(matterTypesListUrl, 'GET');
 	const matterType = (matterTypesResponse?.matter_types || []).find(
 		(m: any) => m.id === case_type_id
@@ -218,9 +217,7 @@ async function getMatterType(matterId: number) {
 async function getUserIdByName(name: string) {
 	if (!name) return null;
 
-	const userProfilesListUrl = encodeURI(
-		`${GROWPATH.USER_PROFILES}?filters={"anything_like_with_person":"${name}"}`
-	);
+	const userProfilesListUrl = `${GROWPATH.USER_PROFILES}?filters={"anything_like_with_person":"${name}"}`;
 	const response = await sendRequest(userProfilesListUrl, 'GET');
 
 	const user = (response?.user_profiles || []).find((u: any) => u.display_name === name);
