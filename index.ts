@@ -84,6 +84,7 @@ app.post(
 			} else if (
 				[...EVENT.CALL_ENDED, EVENT.CALL_MISSED, EVENT.CALL_REJECTED].includes(body.event)
 			) {
+				console.log('payload.object', payload?.object);
 				const fromNumber = payload?.object?.caller?.phone_number?.slice(-10);
 				const toNumber = payload?.object?.callee?.phone_number?.slice(-10);
 				const answerStartTime = payload?.object?.answer_start_time;
@@ -125,6 +126,8 @@ app.post(
 				const recording_url = payload?.object?.recordings?.[0]?.download_url;
 
 				const { telephonyEventId, phoneLogId } = cache[callId] || {};
+
+				console.log('recording_url', recording_url);
 
 				if (telephonyEventId) {
 					await sendRequest(`${GROWPATH.TELEPHONY}/${telephonyEventId}`, 'PUT', {
@@ -238,6 +241,8 @@ function addToCache(callId: string, value: Record<string, any>) {
 		if (!cache[callId]) cache[callId] = {};
 		cache[callId] = { ...cache[callId], ...value };
 	}
+
+	console.log('addToCache', JSON.stringify(cache[callId]));
 }
 
 function getCallDuration(answerStartTime: string, callEndTime: string) {
