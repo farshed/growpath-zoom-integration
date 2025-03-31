@@ -143,6 +143,7 @@ app.post(
 				if (phoneLogId) {
 					await sendRequest(`${GROWPATH.PHONE_LOGS}/${phoneLogId}`, 'PUT', {
 						telephony_records: {
+							type: 'Call',
 							recording_url: download_url,
 							duration
 						}
