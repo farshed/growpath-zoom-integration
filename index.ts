@@ -129,7 +129,7 @@ app.post(
 
 				const { telephonyEventId, phoneLogId } = cache[callId] || {};
 
-				console.log('recording_url', recording_url, duration);
+				console.log('recording_url', recording_url, duration, JSON.stringify(cache[callId]));
 
 				if (telephonyEventId) {
 					await sendRequest(`${GROWPATH.TELEPHONY}/${telephonyEventId}`, 'PUT', {
@@ -245,7 +245,7 @@ function addToCache(callId: string, value: Record<string, any>) {
 		cache[callId] = { ...cache[callId], ...value };
 	}
 
-	console.log('addToCache', JSON.stringify(cache[callId]));
+	console.log('addToCache', callId, JSON.stringify(cache[callId]));
 }
 
 function getCallDuration(answerStartTime: string, callEndTime: string) {
