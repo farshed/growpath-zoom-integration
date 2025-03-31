@@ -90,7 +90,7 @@ app.post(
 				const callEndTime = payload?.object?.call_end_time;
 				const duration = getCallDuration(answerStartTime, callEndTime);
 
-				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(fromNumber);
+				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(toNumber);
 				const staff_id = await getUserIdByName(paralegal);
 
 				const phoneLogResponse = await sendRequest(GROWPATH.PHONE_LOGS, 'POST', {
