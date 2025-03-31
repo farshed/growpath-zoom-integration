@@ -123,11 +123,13 @@ app.post(
 				});
 			} else if (body.event === EVENT.RECORDING_READY) {
 				const callId = payload?.object?.call_id;
-				const recording_url = payload?.object?.recordings?.[0]?.download_url;
+				const recording = payload?.object?.recordings?.[0];
+				const recording_url = recording?.download_url;
+				const duration = recording?.duration;
 
 				const { telephonyEventId, phoneLogId } = cache[callId] || {};
 
-				console.log('recording_url', recording_url);
+				console.log('recording_url', recording_url, duration);
 
 				if (telephonyEventId) {
 					await sendRequest(`${GROWPATH.TELEPHONY}/${telephonyEventId}`, 'PUT', {
@@ -140,7 +142,8 @@ app.post(
 				if (phoneLogId) {
 					await sendRequest(`${GROWPATH.PHONE_LOGS}/${phoneLogId}`, 'PUT', {
 						telephony_records: {
-							recording_url
+							recording_url,
+							duration
 						}
 					});
 				}
@@ -250,18 +253,17 @@ function getCallDuration(answerStartTime: string, callEndTime: string) {
 	return Math.round((+new Date(callEndTime) - +new Date(answerStartTime)) / 1000);
 }
 
-function formatTimestamp(timestamp?: string) {
-	if (!timestamp) return '';
-	const date = new Date(timestamp);
-	return date
-		.toLocaleString('en-US', {
-			year: 'numeric',
-			month: '2-digit',
-			day: '2-digit',
-			hour: '2-digit',
-			minute: '2-digit',
-			second: '2-digit',
-			hour12: true
-		})
-		.replace(',', '');
+function formatTimestamp(ts?: string) {
+	if (!ts) return '';
+	const date = new Date(ts);
+	const pad = (n: number) => n.toString().padStart(2, '0');
+
+	let hours = date.getHours();
+	const ampm = hours >= 12 ? 'PM' : 'AM';
+	hours = hours % 12 || 12;
+
+	return (
+		`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+		`${pad(hours)}:${pad(date.getMinutes())}:${pad(date.getSeconds())} ${ampm}`
+	);
 }
