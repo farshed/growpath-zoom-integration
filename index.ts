@@ -122,19 +122,20 @@ app.post(
 					}
 				});
 			} else if (body.event === EVENT.RECORDING_READY) {
-				const callId = payload?.object?.call_id;
 				const recording = payload?.object?.recordings?.[0];
-				const recording_url = recording?.download_url;
-				const duration = recording?.duration;
+				const { call_id, download_url, duration } = recording || {};
+				// const callId = recording?.call_id;
+				// const recording_url = recording?.download_url;
+				// const duration = recording?.duration;
 
-				const { telephonyEventId, phoneLogId } = cache[callId] || {};
+				const { telephonyEventId, phoneLogId } = cache[call_id] || {};
 
-				console.log('recording_url', recording_url, duration, JSON.stringify(cache[callId]));
+				console.log('download_url', download_url, duration, JSON.stringify(cache[call_id]));
 
 				if (telephonyEventId) {
 					await sendRequest(`${GROWPATH.TELEPHONY}/${telephonyEventId}`, 'PUT', {
 						telephony_event: {
-							recording_url
+							recording_url: download_url
 						}
 					});
 				}
@@ -142,13 +143,13 @@ app.post(
 				if (phoneLogId) {
 					await sendRequest(`${GROWPATH.PHONE_LOGS}/${phoneLogId}`, 'PUT', {
 						telephony_records: {
-							recording_url,
+							recording_url: download_url,
 							duration
 						}
 					});
 				}
 
-				if (callId) delete cache[callId];
+				if (call_id) delete cache[call_id];
 			}
 		} catch (error) {
 			console.log('Error:', error);
