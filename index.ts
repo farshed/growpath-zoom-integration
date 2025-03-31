@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { Elysia, t } from 'elysia';
 
-const ZOOM_WEBHOOK_SECRET_TOKEN = process.env.ZOOM_WEBHOOK_SECRET_TOKEN as any;
+const ZOOM_WEBHOOK_SECRET_TOKEN = process.env.ZOOM_WEBHOOK_SECRET_TOKEN as string;
 const isDev = process.env.NODE_ENV === 'development';
 const endpointSuffix = isDev ? '-training' : '';
 const GROWPATH_BASE_URL = `https://nguyen${endpointSuffix}.growpath.com/api/v2`;
@@ -188,7 +188,7 @@ async function sendRequest(
 }
 
 async function getMatterByPhone(phoneNumber: string) {
-	const mattersListUrl = `${GROWPATH.MATTERS}?filters={"q":"${phoneNumber}"}`;
+	const mattersListUrl = `${GROWPATH.MATTERS}?filters={"claimant_phone":"${phoneNumber}"}`;
 	const mattersResponse = await sendRequest(mattersListUrl, 'GET');
 
 	const matter = (mattersResponse?.matters || []).sort(
