@@ -360,7 +360,7 @@ class ZoomAccessToken {
 		});
 
 		const data = await res.json();
-		console.log('TOKEN', data.access_token);
+		console.log('TOKEN', data);
 		this.token = data.access_token;
 		this.expireTime = new Date(Date.now() + 3500 * 1000);
 	}
