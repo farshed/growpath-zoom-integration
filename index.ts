@@ -345,7 +345,7 @@ class ZoomAccessToken {
 
 	static async refreshToken() {
 		const env = process.env;
-		const tokenUrl = 'https://zoom.us/oauth/token';
+		const tokenUrl = `https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${env.ZOOM_ACCOUNT_ID}`;
 		const creds = Buffer.from(`${env.ZOOM_CLIENT_ID}:${env.ZOOM_CLIENT_SECRET}`).toString(
 			'base64'
 		);
@@ -355,11 +355,7 @@ class ZoomAccessToken {
 			headers: {
 				Authorization: `Basic ${creds}`,
 				'Content-Type': 'application/x-www-form-urlencoded'
-			},
-			body: JSON.stringify({
-				grant_type: 'account_credentials',
-				account_id: env.ZOOM_ACCOUNT_ID
-			})
+			}
 		});
 
 		const data = await res.json();
