@@ -340,6 +340,7 @@ class ZoomAccessToken {
 
 	static async getAccessToken() {
 		if (this.expireTime <= new Date()) await this.refreshToken();
+		console.log(this.token, this.expireTime);
 		return this.token;
 	}
 
