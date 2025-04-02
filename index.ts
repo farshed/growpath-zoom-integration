@@ -1,10 +1,11 @@
 import 'dotenv/config';
 import { Elysia, t } from 'elysia';
 
-const ZOOM_WEBHOOK_SECRET_TOKEN = process.env.ZOOM_WEBHOOK_SECRET_TOKEN as string;
 const isDev = process.env.NODE_ENV === 'development';
 const endpointSuffix = isDev ? '-training' : '';
 const GROWPATH_BASE_URL = `https://nguyen${endpointSuffix}.growpath.com/api/v2`;
+const ZOOM_CALL_RECORDING_BASE_URL = 'https://zoom.us/v2/phone/recording/download';
+const SELF_BASE_URL = 'https://growpath-zoom-webhook.hqnlawfirm.com';
 
 const GROWPATH = {
 	PHONE_LOGS: `${GROWPATH_BASE_URL}/phone_logs`,
@@ -22,10 +23,13 @@ const EVENT = {
 	CALL_ENDED: ['phone.caller_ended', 'phone.callee_ended'], // call is ended by the caller or callee
 	CALL_MISSED: 'phone.callee_missed', // call is missed
 	CALL_REJECTED: 'phone.callee_rejected', // call is rejected by the callee
-	RECORDING_READY: 'phone.recording_completed' // when the call recording becomes available for download
+	RECORDING_READY: 'phone.recording_completed', // when the call recording becomes available for download
+	SMS_SENT: 'phone.sms_sent',
+	SMS_RECEIVED: 'phone.sms_received'
 };
 
 let cache = {} as any;
+let loggedMessages = {};
 
 const app = new Elysia();
 
@@ -34,8 +38,7 @@ app.post(
 	async ({ body, headers, set }) => {
 		try {
 			const message = `v0:${headers['x-zm-request-timestamp']}:${JSON.stringify(body)}`;
-			const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
-			const hashForVerify = hasher.update(message).digest('hex');
+			const hashForVerify = sha256Hash(message);
 			const signature = `v0=${hashForVerify}`;
 
 			console.log('Event received:', body.event);
@@ -49,8 +52,7 @@ app.post(
 			set.status = 200;
 
 			if (body.event === EVENT.URL_VALIDATION) {
-				const hasher = new Bun.CryptoHasher('sha256', ZOOM_WEBHOOK_SECRET_TOKEN);
-				const hashForValidate = hasher.update(payload?.plainToken).digest('hex');
+				const hashForValidate = sha256Hash(payload?.plainToken);
 
 				return {
 					plainToken: payload?.plainToken,
@@ -124,18 +126,20 @@ app.post(
 			} else if (body.event === EVENT.RECORDING_READY) {
 				const recording = payload?.object?.recordings?.[0];
 				const { call_id, download_url, duration } = recording || {};
+				const recording_url = getRecordingUrl(download_url);
+
 				// const callId = recording?.call_id;
 				// const recording_url = recording?.download_url;
 				// const duration = recording?.duration;
 
 				const { telephonyEventId, phoneLogId } = cache[call_id] || {};
 
-				console.log('download_url', download_url, duration, JSON.stringify(cache[call_id]));
+				console.log('recording_url', recording_url, duration, JSON.stringify(cache[call_id]));
 
 				if (telephonyEventId) {
 					await sendRequest(`${GROWPATH.TELEPHONY}/${telephonyEventId}`, 'PUT', {
 						telephony_event: {
-							recording_url: download_url
+							recording_url
 						}
 					});
 				}
@@ -144,13 +148,44 @@ app.post(
 					await sendRequest(`${GROWPATH.PHONE_LOGS}/${phoneLogId}`, 'PUT', {
 						telephony_records: {
 							type: 'Call',
-							recording_url: download_url,
+							recording_url,
 							duration
 						}
 					});
 				}
 
 				if (call_id) delete cache[call_id];
+			} else if ([EVENT.SMS_SENT, EVENT.SMS_RECEIVED].includes(body.event)) {
+				const msgId = payload?.object?.message_id;
+
+				const fromNumber = payload?.object?.sender?.phone_number?.slice(-10);
+				const toNumber = payload?.object?.to_members?.[0]?.phone_number?.slice(-10);
+				const message = payload?.object?.message;
+				const createdAt = formatTimestamp(payload?.object?.date_time);
+				const attachments = (payload?.object?.attachments || []).reduce(
+					(acc: any, item: any) => {
+						if (item?.download_url) acc[item.download_url] = item?.name;
+						return acc;
+					},
+					{}
+				);
+
+				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(toNumber);
+				const staff_id = await getUserIdByName(paralegal);
+
+				await sendRequest(GROWPATH.PHONE_LOGS, 'POST', {
+					telephony_records: {
+						type: 'SMS',
+						raw_from_number: fromNumber,
+						raw_to_number: toNumber,
+						text_message: message,
+						involvee_id,
+						staff_id,
+						matter_id,
+						created_at: createdAt,
+						media_params: attachments
+					}
+				});
 			}
 		} catch (error) {
 			console.log('Error:', error);
@@ -169,6 +204,24 @@ app.post(
 		)
 	}
 )
+	.get('/recording/:id', async ({ params, set }) => {
+		try {
+			const id = params.id;
+			if (!id) {
+				set.status = 400;
+				return 'Bad request!';
+			}
+
+			const accessToken = await ZoomAccessToken.getAccessToken();
+			const downloadUrl = `${ZOOM_CALL_RECORDING_BASE_URL}/${id}?access_token=${accessToken}`;
+			set.status = 302;
+			set.headers['Location'] = downloadUrl;
+		} catch (error) {
+			set.status = 500;
+			console.log('Error:', error);
+			return error;
+		}
+	})
 	.get('/ping', () => 'API is running')
 	.listen(process.env.PORT || 3000);
 
@@ -255,6 +308,17 @@ function getCallDuration(answerStartTime: string, callEndTime: string) {
 	return Math.round((+new Date(callEndTime) - +new Date(answerStartTime)) / 1000);
 }
 
+function getRecordingUrl(url?: string) {
+	if (!url) return '';
+	const id = url.split('/').pop();
+	return `${SELF_BASE_URL}/recording/${id}`;
+}
+
+function sha256Hash(message: string) {
+	const hasher = new Bun.CryptoHasher('sha256', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
+	return hasher.update(message).digest('hex');
+}
+
 function formatTimestamp(ts?: string) {
 	if (!ts) return '';
 	const date = new Date(ts);
@@ -269,3 +333,39 @@ function formatTimestamp(ts?: string) {
 		`${pad(hours)}:${pad(date.getMinutes())}:${pad(date.getSeconds())} ${ampm}`
 	);
 }
+
+class ZoomAccessToken {
+	static token = null;
+	static expireTime = new Date();
+
+	static async getAccessToken() {
+		if (this.expireTime <= new Date()) await this.refreshToken();
+		return this.token;
+	}
+
+	static async refreshToken() {
+		const env = process.env;
+		const tokenUrl = 'https://zoom.us/oauth/token';
+		const creds = Buffer.from(`${env.ZOOM_CLIENT_ID}:${env.ZOOM_CLIENT_SECRET}`).toString(
+			'base64'
+		);
+
+		const res = await fetch(tokenUrl, {
+			method: 'POST',
+			headers: {
+				Authorization: `Basic ${creds}`,
+				'Content-Type': 'application/x-www-form-urlencoded'
+			},
+			body: JSON.stringify({
+				grant_type: 'account_credentials',
+				account_id: env.ZOOM_ACCOUNT_ID
+			})
+		});
+
+		const data = await res.json();
+		this.token = data.access_token;
+		this.expireTime = new Date(Date.now() + 3500 * 1000);
+	}
+}
+
+ZoomAccessToken.refreshToken().catch(console.log);
