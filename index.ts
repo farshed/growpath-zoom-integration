@@ -339,8 +339,8 @@ class ZoomAccessToken {
 	static expireTime = new Date();
 
 	static async getAccessToken() {
-		if (this.expireTime <= new Date()) await this.refreshToken();
-		console.log(this.token, this.expireTime, new Date());
+		// if (this.expireTime <= new Date())
+		await this.refreshToken();
 		return this.token;
 	}
 
@@ -360,7 +360,6 @@ class ZoomAccessToken {
 		});
 
 		const data = await res.json();
-		console.log('TOKEN', data);
 		this.token = data.access_token;
 		this.expireTime = new Date(Date.now() + 3500 * 1000);
 	}
