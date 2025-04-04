@@ -12,7 +12,8 @@ const GROWPATH = {
 	PHONES: `${GROWPATH_BASE_URL}/phones`,
 	MATTERS: `${GROWPATH_BASE_URL}/matters`,
 	MATTER_TYPES: `${GROWPATH_BASE_URL}/matter_types`,
-	USER_PROFILES: `${GROWPATH_BASE_URL}/user_profiles`
+	USER_PROFILES: `${GROWPATH_BASE_URL}/user_profiles`,
+	PERSON_ENTITIES: `${GROWPATH_BASE_URL}/entities/person`
 };
 
 const EVENT = {
@@ -65,7 +66,8 @@ app.post(
 
 				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(to_number);
 				const matter_type = await getMatterType(matter_id);
-				const staff_id = await getUserIdByName(paralegal);
+				// const staff_id = await getUserIdByName(paralegal);
+				const staff_id = await Entities.findStaffIdByPhoneNumber(from_number);
 
 				const response = await sendRequest(GROWPATH.TELEPHONY, 'POST', {
 					telephony_event: {
@@ -93,7 +95,8 @@ app.post(
 				const duration = getCallDuration(answerStartTime, callEndTime);
 
 				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(toNumber);
-				const staff_id = await getUserIdByName(paralegal);
+				// const staff_id = await getUserIdByName(paralegal);
+				const staff_id = await Entities.findStaffIdByPhoneNumber(fromNumber);
 
 				const phoneLogResponse = await sendRequest(GROWPATH.PHONE_LOGS, 'POST', {
 					telephony_records: {
@@ -170,7 +173,8 @@ app.post(
 				);
 
 				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(toNumber);
-				const staff_id = await getUserIdByName(paralegal);
+				// const staff_id = await getUserIdByName(paralegal);
+				const staff_id = await Entities.findStaffIdByPhoneNumber(fromNumber);
 
 				await sendRequest(GROWPATH.PHONE_LOGS, 'POST', {
 					telephony_records: {
@@ -290,15 +294,15 @@ async function getMatterType(matterId: number) {
 	return matterType?.name || '';
 }
 
-async function getUserIdByName(name: string) {
-	if (!name) return null;
+// async function getUserIdByName(name: string) {
+// 	if (!name) return null;
 
-	const userProfilesListUrl = `${GROWPATH.USER_PROFILES}?filters={"anything_like_with_person":"${name}"}`;
-	const response = await sendRequest(userProfilesListUrl, 'GET');
+// 	const userProfilesListUrl = `${GROWPATH.USER_PROFILES}?filters={"anything_like_with_person":"${name}"}`;
+// 	const response = await sendRequest(userProfilesListUrl, 'GET');
 
-	const user = (response?.user_profiles || []).find((u: any) => u.display_name === name);
-	return user?.id || null;
-}
+// 	const user = (response?.user_profiles || []).find((u: any) => u.display_name === name);
+// 	return user?.id || null;
+// }
 
 function addToCache(callId: string, value: Record<string, any>) {
 	if (callId) {
@@ -373,3 +377,36 @@ class ZoomAccessToken {
 }
 
 ZoomAccessToken.refreshToken().catch(console.log);
+
+class Entities {
+	static activeStaff = [];
+	static activeStaffLastRefreshed = new Date();
+
+	static async findStaffIdByPhoneNumber(phoneNum: string) {
+		const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+		if (this.activeStaffLastRefreshed.getTime() <= fiveMinutesAgo) {
+			await this.refreshActiveStaff();
+		}
+
+		const staff = this.activeStaff.find((s: any) => {
+			const phone = (s?.phone_numbers_data || []).find((ph: any) => ph?.number === phoneNum);
+			return !!phone;
+		}) as any;
+
+		return staff?.id;
+	}
+
+	static async refreshActiveStaff() {
+		const response = await sendRequest(
+			`${GROWPATH.PERSON_ENTITIES}//search?filters={"active_staff": true}&per_page=1000`,
+			'GET'
+		);
+
+		if (response.people) {
+			this.activeStaff = response.people;
+			this.activeStaffLastRefreshed = new Date();
+		}
+	}
+}
+
+Entities.refreshActiveStaff().catch(console.log);
