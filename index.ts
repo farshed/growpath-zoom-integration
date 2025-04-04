@@ -1,10 +1,9 @@
 import 'dotenv/config';
-import { Elysia, t } from 'elysia';
+import { Elysia, redirect, t } from 'elysia';
 
 const isDev = process.env.NODE_ENV === 'development';
 const endpointSuffix = isDev ? '-training' : '';
 const GROWPATH_BASE_URL = `https://nguyen${endpointSuffix}.growpath.com/api/v2`;
-const ZOOM_CALL_RECORDING_BASE_URL = 'https://zoom.us/v2/phone/recording/download';
 const SELF_BASE_URL = 'https://growpath-zoom-webhook.hqnlawfirm.com';
 
 const GROWPATH = {
@@ -213,12 +212,19 @@ app.post(
 			}
 
 			const accessToken = await ZoomAccessToken.getAccessToken();
-			const downloadUrl = `${ZOOM_CALL_RECORDING_BASE_URL}/${id}?access_token=${accessToken}`;
+			const response = await fetch(`https://api.zoom.us/v2/phone/recording/download/${id}`, {
+				method: 'GET',
+				headers: { Authorization: `Bearer ${accessToken}` },
+				redirect: 'manual'
+			});
+
+			const downloadUrl = response.headers.get('location');
+			if (!downloadUrl) throw 'File not found';
+
 			set.status = 302;
 			set.headers['Location'] = downloadUrl;
 		} catch (error) {
 			set.status = 500;
-			console.log('Error:', error);
 			return error;
 		}
 	})
@@ -315,7 +321,7 @@ function getRecordingUrl(url?: string) {
 }
 
 function sha256Hash(message: string) {
-	const hasher = new Bun.CryptoHasher('sha256', process.env.ZOOM_WEBHOOK_SECRET_TOKEN);
+	const hasher = new Bun.CryptoHasher('sha256', process.env.ZOOM_SECRET_TOKEN);
 	return hasher.update(message).digest('hex');
 }
 
@@ -339,8 +345,9 @@ class ZoomAccessToken {
 	static expireTime = new Date();
 
 	static async getAccessToken() {
-		// if (this.expireTime <= new Date())
-		await this.refreshToken();
+		if (this.expireTime <= new Date()) {
+			await this.refreshToken();
+		}
 		return this.token;
 	}
 
