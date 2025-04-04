@@ -393,6 +393,8 @@ class Entities {
 			return !!phone;
 		}) as any;
 
+		console.log('STAFF_ID', staff?.id);
+
 		return staff?.id;
 	}
 
