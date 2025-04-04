@@ -67,7 +67,7 @@ app.post(
 				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(to_number);
 				const matter_type = await getMatterType(matter_id);
 				// const staff_id = await getUserIdByName(paralegal);
-				const staff_id = await Entities.findStaffIdByPhoneNumber(from_number);
+				const staff_id = await Entities.findStaffIdByPhoneNumbers([from_number, to_number]);
 
 				const response = await sendRequest(GROWPATH.TELEPHONY, 'POST', {
 					telephony_event: {
@@ -96,7 +96,7 @@ app.post(
 
 				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(toNumber);
 				// const staff_id = await getUserIdByName(paralegal);
-				const staff_id = await Entities.findStaffIdByPhoneNumber(fromNumber);
+				const staff_id = await Entities.findStaffIdByPhoneNumbers([fromNumber, toNumber]);
 
 				const phoneLogResponse = await sendRequest(GROWPATH.PHONE_LOGS, 'POST', {
 					telephony_records: {
@@ -174,7 +174,7 @@ app.post(
 
 				const { matter_id, involvee_id, paralegal } = await getMatterByPhone(toNumber);
 				// const staff_id = await getUserIdByName(paralegal);
-				const staff_id = await Entities.findStaffIdByPhoneNumber(fromNumber);
+				const staff_id = await Entities.findStaffIdByPhoneNumbers([fromNumber, toNumber]);
 
 				await sendRequest(GROWPATH.PHONE_LOGS, 'POST', {
 					telephony_records: {
@@ -382,14 +382,17 @@ class Entities {
 	static activeStaff = [];
 	static activeStaffLastRefreshed = new Date();
 
-	static async findStaffIdByPhoneNumber(phoneNum: string) {
-		const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-		if (this.activeStaffLastRefreshed.getTime() <= fiveMinutesAgo) {
+	static async findStaffIdByPhoneNumbers(phoneNums: string[]) {
+		const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
+		if (this.activeStaffLastRefreshed.getTime() <= twoMinutesAgo) {
 			await this.refreshActiveStaff();
 		}
 
+		phoneNums = phoneNums.filter((x) => !!x);
 		const staff = this.activeStaff.find((s: any) => {
-			const phone = (s?.phone_numbers_data || []).find((ph: any) => ph?.number === phoneNum);
+			const phone = (s?.phone_numbers_data || []).find((ph: any) =>
+				phoneNums.includes(ph?.number)
+			);
 			return !!phone;
 		}) as any;
 
