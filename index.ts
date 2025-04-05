@@ -298,9 +298,9 @@ async function getMatterType(matterId: number) {
 // 	if (!name) return null;
 
 // 	const userProfilesListUrl = `${GROWPATH.USER_PROFILES}?filters={"anything_like_with_person":"${name}"}`;
-// 	const response = await sendRequest(userProfilesListUrl, 'GET');
+// const response = await sendRequest(userProfilesListUrl, 'GET');
 
-// 	const user = (response?.user_profiles || []).find((u: any) => u.display_name === name);
+// const user = (response?.user_profiles || []).find((u: any) => u.display_name === name);
 // 	return user?.id || null;
 // }
 
@@ -396,9 +396,20 @@ class Entities {
 			return !!phone;
 		}) as any;
 
-		console.log('STAFF_ID', staff?.id);
+		if (staff) {
+			const { first_name, last_name } = staff;
+			const userProfilesListUrl = `${GROWPATH.USER_PROFILES}?filters={"anything_like_with_person":"${first_name} ${last_name}"}`;
 
-		return staff?.id;
+			const response = await sendRequest(userProfilesListUrl, 'GET');
+			if (response?.user_profiles?.length) {
+				console.log('STAFF_ID', staff?.id);
+				return response?.user_profiles[0]?.id;
+			}
+
+			// const user = (response?.user_profiles || []).find((u: any) => u.display_name === name);
+		}
+
+		return null;
 	}
 
 	static async refreshActiveStaff() {
