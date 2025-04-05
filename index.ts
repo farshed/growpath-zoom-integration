@@ -402,7 +402,7 @@ class Entities {
 
 			const response = await sendRequest(userProfilesListUrl, 'GET');
 			if (response?.user_profiles?.length) {
-				console.log('STAFF_ID', staff?.id);
+				console.log('STAFF ID', staff?.id);
 				return response?.user_profiles[0]?.id;
 			}
 
